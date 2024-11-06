@@ -1,0 +1,9 @@
+Flask==2.0.3
+pandas
+numpy
+joblib
+sentence-transformers
+scikit-learn
+nltk
+bootstrap-flask
+werkzeug==2.0.3

@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Classification Result</h2>
+<p><strong>Description:</strong></p>
+<p>{{ description }}</p>
+<p><strong>Predicted Category:</strong> {{ category }}</p>
+<p><strong>Predicted Sub-category:</strong> {{ sub_category }}</p>
+<a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back</a>
+{% endblock %}
