@@ -142,6 +142,7 @@ def process_file(filepath):
     flash(eta)
     return output_filepath
 
+
 @app.route('/result')
 def result():
     return render_template('result.html')

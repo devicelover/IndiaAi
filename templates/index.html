@@ -23,14 +23,16 @@
     </form>
   </div>
   <!-- File Upload Tab -->
-  <div class="tab-pane fade" id="file" role="tabpanel">
-    <form method="POST" action="{{ url_for('index') }}" enctype="multipart/form-data" class="mt-3">
+  <!-- File Upload Tab -->
+<div class="tab-pane fade" id="file" role="tabpanel">
+    <form method="POST" action="{{ url_for('index') }}" enctype="multipart/form-data" class="mt-3" id="file-form">
       <div class="form-group">
         <label for="file">Upload CSV File:</label>
         <input type="file" class="form-control-file" id="file" name="file" accept=".csv">
       </div>
-      <button type="submit" name="file_input" class="btn btn-primary">Process File</button>
+      <button type="submit" name="file_input" class="btn btn-primary" id="file-submit-button">Process File</button>
     </form>
   </div>
+
 </div>
 {% endblock %}
