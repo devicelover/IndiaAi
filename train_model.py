@@ -1,91 +1,62 @@
 # train_model.py
 
 import pandas as pd
-import numpy as np
-import nltk
-import warnings
 import joblib
-
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
 from sklearn.multioutput import MultiOutputClassifier
+from lightgbm import LGBMClassifier
+from combined_transformer import CombinedTransformer
 from sklearn.metrics import classification_report
-from sklearn.ensemble import RandomForestClassifier
-from sentence_transformers import SentenceTransformer
-from sklearn.base import BaseEstimator, TransformerMixin
-
-from text_preprocessor import TextPreprocessor
-
-# Suppress warnings
-warnings.filterwarnings('ignore')
-
-# Initialize NLTK components
-nltk.download('punkt')
-nltk.download('wordnet')
-nltk.download('stopwords')
-
-# Define the EmbeddingTransformer class
-class EmbeddingTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, model_name='paraphrase-multilingual-MiniLM-L12-v2'):
-        self.model_name = model_name
-        self.embedding_model = SentenceTransformer(self.model_name)
-
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X):
-        # Ensure X is a list of strings
-        if isinstance(X, (pd.Series, pd.DataFrame)):
-            texts = X.tolist()
-        elif isinstance(X, np.ndarray):
-            texts = X.tolist()
-        elif isinstance(X, list):
-            texts = X  # X is already a list
-        else:
-            texts = [str(X)]
-        return self.embedding_model.encode(texts, batch_size=32, show_progress_bar=True)
+from tqdm import tqdm
+import time
 
 def main():
-    # Load the data
-    print("Loading data...")
-    try:
-        train_df = pd.read_csv('data/train.csv')
-        test_df = pd.read_csv('data/test.csv')
-    except FileNotFoundError:
-        print("Error: 'train.csv' and/or 'test.csv' not found in 'data/' directory.")
-        return
+    start_time = time.time()
 
-    # Standardize labels in both datasets
+    # Load data
+    print("Loading data...")
+    train_df = pd.read_csv('data/train.csv')
+    test_df = pd.read_csv('data/test.csv')
+
+    # Standardize labels
     print("Standardizing labels...")
     for df in [train_df, test_df]:
         df['category'] = df['category'].str.strip().str.lower()
         df['sub_category'] = df['sub_category'].str.strip().str.lower()
 
-    # Drop rows with NaN in 'category' or 'sub_category'
-    print("Dropping rows with NaN values in 'category' or 'sub_category'...")
-    train_df.dropna(subset=['category', 'sub_category'], inplace=True)
-    test_df.dropna(subset=['category', 'sub_category'], inplace=True)
+    # Handle missing values
+    print("Handling missing values...")
+    train_df.dropna(subset=['category', 'sub_category', 'crimeaditionalinfo'], inplace=True)
+    test_df.dropna(subset=['category', 'sub_category', 'crimeaditionalinfo'], inplace=True)
 
-    # Reset index after dropping rows
-    train_df.reset_index(drop=True, inplace=True)
-    test_df.reset_index(drop=True, inplace=True)
-
-    # Prepare the labels
+    # Encode labels
     print("Encoding labels...")
     category_encoder = LabelEncoder()
     sub_category_encoder = LabelEncoder()
 
-    # Fit encoders on training data
     category_encoder.fit(train_df['category'])
     sub_category_encoder.fit(train_df['sub_category'])
 
-    # Remove unseen categories and sub-categories from test data
-    print("Removing unseen categories and sub-categories from test data...")
-    test_df = test_df[test_df['category'].isin(category_encoder.classes_)]
-    test_df = test_df[test_df['sub_category'].isin(sub_category_encoder.classes_)]
+    # Identify unseen categories and sub-categories in test data
+    unseen_categories = set(test_df['category']) - set(category_encoder.classes_)
+    unseen_sub_categories = set(test_df['sub_category']) - set(sub_category_encoder.classes_)
+
+    if unseen_categories:
+        print(f"Unseen categories in test data: {unseen_categories}")
+        # Remove rows with unseen categories
+        test_df = test_df[~test_df['category'].isin(unseen_categories)]
+        print(f"Removed {len(unseen_categories)} unseen categories from test data.")
+
+    if unseen_sub_categories:
+        print(f"Unseen sub-categories in test data: {unseen_sub_categories}")
+        # Remove rows with unseen sub-categories
+        test_df = test_df[~test_df['sub_category'].isin(unseen_sub_categories)]
+        print(f"Removed {len(unseen_sub_categories)} unseen sub-categories from test data.")
+
+    # Reset index after removals
     test_df.reset_index(drop=True, inplace=True)
 
-    # Encode labels
     y_train = pd.DataFrame({
         'category': category_encoder.transform(train_df['category']),
         'sub_category': sub_category_encoder.transform(train_df['sub_category'])
@@ -96,41 +67,40 @@ def main():
         'sub_category': sub_category_encoder.transform(test_df['sub_category'])
     })
 
-    # Split the data
     X_train = train_df['crimeaditionalinfo'].fillna('')
     X_test = test_df['crimeaditionalinfo'].fillna('')
 
-    # Build the pipeline with the custom EmbeddingTransformer
-    print("Building pipeline...")
+    # Build the pipeline
+    print("Building the pipeline...")
     pipeline = Pipeline([
-        ('preprocessor', TextPreprocessor()),
-        ('embedding', EmbeddingTransformer()),
-        ('classifier', MultiOutputClassifier(RandomForestClassifier(
-            n_estimators=100,
-            n_jobs=-1,
-            class_weight='balanced',
-            random_state=42
+        ('combined_transformer', CombinedTransformer()),
+        ('classifier', MultiOutputClassifier(LGBMClassifier(
+            n_estimators=200,
+            learning_rate=0.1,
+            n_jobs=-1
         )))
     ])
 
-    # Train the model
-    print("Training model...")
-    pipeline.fit(X_train, y_train)
+    # Train the model with progress bar
+    print("Training the model...")
+    with tqdm(total=100, desc="Training Progress") as pbar:
+        pipeline.fit(X_train, y_train)
+        pbar.update(100)
 
-    # Save the model for future use
-    print("Saving model...")
+    # Save the model and encoders
+    print("Saving the model and encoders...")
     joblib.dump(pipeline, 'models/crime_classification_model.joblib')
     joblib.dump(category_encoder, 'models/category_encoder.joblib')
     joblib.dump(sub_category_encoder, 'models/sub_category_encoder.joblib')
 
     # Evaluate the model
-    print("Evaluating model...")
+    print("Evaluating the model...")
     y_pred = pipeline.predict(X_test)
 
     # Convert predictions to DataFrame
     y_pred_df = pd.DataFrame(y_pred, columns=['category', 'sub_category'])
 
-    # Decode the labels
+    # Decode labels
     y_test_decoded = y_test.copy()
     y_pred_decoded = y_pred_df.copy()
 
@@ -140,15 +110,16 @@ def main():
     y_test_decoded['sub_category'] = sub_category_encoder.inverse_transform(y_test['sub_category'])
     y_pred_decoded['sub_category'] = sub_category_encoder.inverse_transform(y_pred_df['sub_category'])
 
-    # Classification report for category
+    # Classification reports
     print("\nCategory Classification Report:")
-    print(classification_report(y_test_decoded['category'], y_pred_decoded['category'], zero_division=0))
+    print(classification_report(y_test_decoded['category'], y_pred_decoded['category']))
 
-    # Classification report for sub_category
     print("\nSub-category Classification Report:")
-    print(classification_report(y_test_decoded['sub_category'], y_pred_decoded['sub_category'], zero_division=0))
+    print(classification_report(y_test_decoded['sub_category'], y_pred_decoded['sub_category']))
 
-    print("\nModel training and evaluation completed.")
+    end_time = time.time()
+    total_time = end_time - start_time
+    print(f"\nModel training and evaluation completed in {total_time:.2f} seconds.")
 
 if __name__ == '__main__':
     main()

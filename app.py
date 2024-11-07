@@ -2,30 +2,12 @@
 
 from flask import Flask, render_template, request, send_file, redirect, url_for, flash
 import pandas as pd
-import numpy as np
 import joblib
 import os
-import time
 from werkzeug.utils import secure_filename
-from sentence_transformers import SentenceTransformer
-import nltk
-from nltk.tokenize import word_tokenize
-from nltk.stem import WordNetLemmatizer
-from nltk.corpus import stopwords
-from sklearn.base import BaseEstimator, TransformerMixin
-
-# Import the TextPreprocessor class from text_preprocessor.py
-from text_preprocessor import TextPreprocessor
-
-# Initialize NLTK components
-nltk.download('punkt')
-nltk.download('wordnet')
-nltk.download('stopwords')
-lemmatizer = WordNetLemmatizer()
-stop_words = set(stopwords.words('english'))
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # Replace with a secure key in production
+app.secret_key = 'your_secure_secret_key'  # Replace with your actual secret key
 
 UPLOAD_FOLDER = 'uploads'
 PROCESSED_FOLDER = 'processed'
@@ -38,11 +20,10 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(PROCESSED_FOLDER, exist_ok=True)
 
 # Load the model and encoders
+print("Loading model and encoders...")
 model = joblib.load('models/crime_classification_model.joblib')
 category_encoder = joblib.load('models/category_encoder.joblib')
 sub_category_encoder = joblib.load('models/sub_category_encoder.joblib')
-
-# Since the model pipeline includes preprocessing and embedding, we don't need to load the embedding model separately
 
 # Define allowed file extensions
 ALLOWED_EXTENSIONS = {'csv'}
@@ -51,59 +32,81 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+@app.context_processor
+def inject_current_year():
+    from datetime import datetime
+    return {'current_year': datetime.now().year}
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
         # Check which form was submitted
         if 'text_input' in request.form:
             # Text input form submitted
-            description = request.form['description']
-            if description.strip() == '':
+            description = request.form.get('description', '').strip()
+            if description == '':
                 flash('Please enter a description.')
                 return redirect(url_for('index'))
             else:
                 # Process the input and get prediction
-                # Since our model includes preprocessing and embedding, we can directly predict
                 prediction = model.predict([description])
-                category_pred = category_encoder.inverse_transform(prediction[0])[0]
-                sub_category_pred = sub_category_encoder.inverse_transform(prediction[1])[0]
+
+                # Access the predicted indices
+                predicted_category_index = prediction[0][0]
+                predicted_sub_category_index = prediction[0][1]
+
+                # Perform inverse transformation
+                try:
+                    category_pred = category_encoder.inverse_transform([predicted_category_index])[0]
+                except ValueError as e:
+                    print("Error:", e)
+                    category_pred = "Unknown Category"
+
+                try:
+                    sub_category_pred = sub_category_encoder.inverse_transform([predicted_sub_category_index])[0]
+                except ValueError as e:
+                    print("Error:", e)
+                    sub_category_pred = "Unknown Sub-category"
+
                 return render_template('result.html', description=description, category=category_pred, sub_category=sub_category_pred)
         elif 'file_input' in request.form:
             # File upload form submitted
-            if 'file' not in request.files or request.files['file'].filename == '':
+            file = request.files.get('file')
+            if not file or file.filename == '':
                 flash('No file selected.')
                 return redirect(url_for('index'))
-            file = request.files['file']
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 input_filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(input_filepath)
 
                 # Process the file
-                output_filepath, eta = process_file(input_filepath)
+                output_filepath = process_file(input_filepath)
 
-                # Provide the download link and ETA
-                return render_template('download.html', output_filename=os.path.basename(output_filepath), eta=eta)
+                # Provide the download link
+                return render_template('download.html', output_filename=os.path.basename(output_filepath))
             else:
                 flash('Invalid file type. Please upload a CSV file.')
                 return redirect(url_for('index'))
     return render_template('index.html')
 
 def process_file(filepath):
-    start_time = time.time()
     df = pd.read_csv(filepath)
 
     if 'crimeaditionalinfo' not in df.columns:
         flash('CSV file must contain a "crimeaditionalinfo" column.')
         return redirect(url_for('index'))
 
-    # Since our model pipeline includes preprocessing and embedding, we can directly predict
-    # Predict
-    predictions = model.predict(df['crimeaditionalinfo'])
+    # Predict using the model pipeline
+    predictions = model.predict(df['crimeaditionalinfo'].fillna(''))
+
+    # Extract predicted indices
+    predicted_category_indices = predictions[:, 0]
+    predicted_sub_category_indices = predictions[:, 1]
 
     # Decode predictions
-    categories = category_encoder.inverse_transform(predictions[0])
-    sub_categories = sub_category_encoder.inverse_transform(predictions[1])
+    categories = category_encoder.inverse_transform(predicted_category_indices)
+    sub_categories = sub_category_encoder.inverse_transform(predicted_sub_category_indices)
 
     # Add predictions to DataFrame
     df['Predicted Category'] = categories
@@ -114,12 +117,7 @@ def process_file(filepath):
     output_filepath = os.path.join(app.config['PROCESSED_FOLDER'], output_filename)
     df.to_csv(output_filepath, index=False)
 
-    end_time = time.time()
-    processing_time = end_time - start_time
-    eta = f"Processing completed in {processing_time:.2f} seconds."
-
-    flash(eta)
-    return output_filepath, eta
+    return output_filepath
 
 @app.route('/download/<filename>')
 def download_file(filename):

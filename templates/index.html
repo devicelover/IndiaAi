@@ -23,8 +23,7 @@
     </form>
   </div>
   <!-- File Upload Tab -->
-  <!-- File Upload Tab -->
-<div class="tab-pane fade" id="file" role="tabpanel">
+  <div class="tab-pane fade" id="file" role="tabpanel">
     <form method="POST" action="{{ url_for('index') }}" enctype="multipart/form-data" class="mt-3" id="file-form">
       <div class="form-group">
         <label for="file">Upload CSV File:</label>
@@ -33,6 +32,5 @@
       <button type="submit" name="file_input" class="btn btn-primary" id="file-submit-button">Process File</button>
     </form>
   </div>
-
 </div>
 {% endblock %}
