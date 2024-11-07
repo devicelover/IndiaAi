@@ -2,7 +2,7 @@
 
 This repository contains the source code for a web-based crime classification application developed by **Voldebug Innovations Pvt. Ltd.** The application leverages machine learning to classify crime descriptions into predefined categories and subcategories.
 
-![App Screenshot](static/app_screenshot.png) <!-- Optional: Add a screenshot of your application -->
+![App Screenshot](static/screenshot.png) <!-- Optional: Add a screenshot of your application -->
 
 ## **Features**
 
@@ -26,7 +26,7 @@ This repository contains the source code for a web-based crime classification ap
 
 ## **Demo**
 
-You can access a live demo of the application [here](#). <!-- Replace with actual link if available -->
+You can access a live demo of the application [here](crimeai.voldebug.com). <!-- Replace with actual link if available -->
 
 ## **Installation**
 
@@ -38,7 +38,7 @@ You can access a live demo of the application [here](#). <!-- Replace with actua
 ### **Clone the Repository**
 
 ```bash
-git clone https://github.com/yourusername/your-repository.git
+git clone https://github.com/devicelover/indiaai.git
 cd your-repository
 ```
 
@@ -126,7 +126,7 @@ Contributions are welcome! Please follow these steps:
 
 ## **License**
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed.
 
 ---
 

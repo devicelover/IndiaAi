@@ -9,7 +9,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 import os
 
 # Set Seaborn style
-sns.set(style='whitegrid', palette='muted')
+sns.set_palette('Set2')
 
 def main():
     # Load test data
@@ -98,7 +98,7 @@ def main():
 
 def plot_class_distribution(data, column, title, output_dir):
     counts = data[column].value_counts()
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(12, 8))
     sns.barplot(x=counts.index, y=counts.values)
     plt.title(title)
     plt.xlabel(column.replace('_', ' ').title())
