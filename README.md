@@ -26,7 +26,7 @@ This repository contains the source code for a web-based crime classification ap
 
 ## **Demo**
 
-You can access a live demo of the application [here](crimeai.voldebug.com). <!-- Replace with actual link if available -->
+You can access a live demo of the application [here](https://crimeai.voldebug.com). <!-- Replace with actual link if available -->
 
 ## **Installation**
 
