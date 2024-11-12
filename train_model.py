@@ -1,14 +1,10 @@
-# train_model.py
-
 import pandas as pd
 import joblib
-from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
-from sklearn.multioutput import MultiOutputClassifier
 from lightgbm import LGBMClassifier
 from combined_transformer import CombinedTransformer
 from sklearn.metrics import classification_report
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import time
 
 def main():
@@ -44,71 +40,102 @@ def main():
 
     if unseen_categories:
         print(f"Unseen categories in test data: {unseen_categories}")
-        # Remove rows with unseen categories
         test_df = test_df[~test_df['category'].isin(unseen_categories)]
         print(f"Removed {len(unseen_categories)} unseen categories from test data.")
 
     if unseen_sub_categories:
         print(f"Unseen sub-categories in test data: {unseen_sub_categories}")
-        # Remove rows with unseen sub-categories
         test_df = test_df[~test_df['sub_category'].isin(unseen_sub_categories)]
         print(f"Removed {len(unseen_sub_categories)} unseen sub-categories from test data.")
 
     # Reset index after removals
     test_df.reset_index(drop=True, inplace=True)
 
-    y_train = pd.DataFrame({
-        'category': category_encoder.transform(train_df['category']),
-        'sub_category': sub_category_encoder.transform(train_df['sub_category'])
-    })
+    y_train_category = category_encoder.transform(train_df['category'])
+    y_train_sub_category = sub_category_encoder.transform(train_df['sub_category'])
 
-    y_test = pd.DataFrame({
-        'category': category_encoder.transform(test_df['category']),
-        'sub_category': sub_category_encoder.transform(test_df['sub_category'])
-    })
+    y_test_category = category_encoder.transform(test_df['category'])
+    y_test_sub_category = sub_category_encoder.transform(test_df['sub_category'])
 
     X_train = train_df['crimeaditionalinfo'].fillna('')
     X_test = test_df['crimeaditionalinfo'].fillna('')
 
-    # Build the pipeline
-    print("Building the pipeline...")
-    pipeline = Pipeline([
-        ('combined_transformer', CombinedTransformer()),
-        ('classifier', MultiOutputClassifier(LGBMClassifier(
-            n_estimators=200,
-            learning_rate=0.1,
-            n_jobs=-1
-        )))
-    ])
+    # Transform the data
+    print("Transforming the data...")
+    transformer = CombinedTransformer()
+    X_train_transformed = transformer.fit_transform(X_train)
+    X_test_transformed = transformer.transform(X_test)
 
-    # Train the model with progress bar
-    print("Training the model...")
-    with tqdm(total=100, desc="Training Progress") as pbar:
-        pipeline.fit(X_train, y_train)
-        pbar.update(100)
+    # Initialize models
+    category_model = LGBMClassifier(
+        n_estimators=200,
+        learning_rate=0.1,
+        n_jobs=-1
+    )
+    sub_category_model = LGBMClassifier(
+        n_estimators=200,
+        learning_rate=0.1,
+        n_jobs=-1
+    )
 
-    # Save the model and encoders
-    print("Saving the model and encoders...")
-    joblib.dump(pipeline, 'models/crime_classification_model.joblib')
+    # Training progress bars
+    print("Training the models...")
+    category_pbar = tqdm(total=category_model.n_estimators, desc="Training Category Model")
+    sub_category_pbar = tqdm(total=sub_category_model.n_estimators, desc="Training Sub-Category Model")
+
+    # Custom callback to update progress bar
+    def category_callback(env):
+        category_pbar.update(1)
+
+    def sub_category_callback(env):
+        sub_category_pbar.update(1)
+
+    # Train category model with progress bar
+    category_model.fit(
+        X_train_transformed,
+        y_train_category,
+        eval_set=[(X_test_transformed, y_test_category)],
+        eval_metric='multi_logloss',
+        callbacks=[category_callback]
+    )
+    category_pbar.close()
+
+    # Train sub-category model with progress bar
+    sub_category_model.fit(
+        X_train_transformed,
+        y_train_sub_category,
+        eval_set=[(X_test_transformed, y_test_sub_category)],
+        eval_metric='multi_logloss',
+        callbacks=[sub_category_callback]
+    )
+    sub_category_pbar.close()
+
+    # Save the models and transformer
+    print("Saving the models and encoders...")
+    joblib.dump({
+        'transformer': transformer,
+        'category_model': category_model,
+        'sub_category_model': sub_category_model
+    }, 'models/crime_classification_model.joblib')
     joblib.dump(category_encoder, 'models/category_encoder.joblib')
     joblib.dump(sub_category_encoder, 'models/sub_category_encoder.joblib')
 
-    # Evaluate the model
-    print("Evaluating the model...")
-    y_pred = pipeline.predict(X_test)
+    # Evaluate the models
+    print("Evaluating the models...")
 
-    # Convert predictions to DataFrame
-    y_pred_df = pd.DataFrame(y_pred, columns=['category', 'sub_category'])
+    # Predict categories
+    y_pred_category = category_model.predict(X_test_transformed)
+    y_pred_sub_category = sub_category_model.predict(X_test_transformed)
 
     # Decode labels
-    y_test_decoded = y_test.copy()
-    y_pred_decoded = y_pred_df.copy()
-
-    y_test_decoded['category'] = category_encoder.inverse_transform(y_test['category'])
-    y_pred_decoded['category'] = category_encoder.inverse_transform(y_pred_df['category'])
-
-    y_test_decoded['sub_category'] = sub_category_encoder.inverse_transform(y_test['sub_category'])
-    y_pred_decoded['sub_category'] = sub_category_encoder.inverse_transform(y_pred_df['sub_category'])
+    y_test_decoded = pd.DataFrame({
+        'category': category_encoder.inverse_transform(y_test_category),
+        'sub_category': sub_category_encoder.inverse_transform(y_test_sub_category)
+    })
+    y_pred_decoded = pd.DataFrame({
+        'category': category_encoder.inverse_transform(y_pred_category),
+        'sub_category': sub_category_encoder.inverse_transform(y_pred_sub_category)
+    })
 
     # Classification reports
     print("\nCategory Classification Report:")
