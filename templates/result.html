@@ -1,9 +1,12 @@
 {% extends "layout.html" %}
 {% block content %}
-<h2>Classification Result</h2>
-<p><strong>Description:</strong></p>
-<p>{{ description }}</p>
-<p><strong>Predicted Category:</strong> {{ category }}</p>
-<p><strong>Predicted Sub-category:</strong> {{ sub_category }}</p>
-<a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back</a>
+<div class="card bg-secondary text-light shadow-sm mt-5">
+    <div class="card-body">
+        <h3 class="card-title text-center">Classification Result</h3>
+        <p><strong>Description:</strong> {{ description or "Data not available" }}</p>
+        <p><strong>Predicted Category:</strong> {{ category or "Data not available" }}</p>
+        <p><strong>Predicted Sub-category:</strong> {{ sub_category or "Data not available" }}</p>
+        <a href="{{ url_for('index') }}" class="btn btn-outline-light btn-block mt-3">Back to Home</a>
+    </div>
+</div>
 {% endblock %}

@@ -1,11 +1,19 @@
+# train_model.py
+
 import pandas as pd
 import joblib
+import numpy as np
 from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import classification_report
+from sklearn.utils.class_weight import compute_class_weight
+from imblearn.over_sampling import RandomOverSampler
 from lightgbm import LGBMClassifier
 from combined_transformer import CombinedTransformer
-from sklearn.metrics import classification_report
 from tqdm.auto import tqdm
 import time
+import warnings
+
+warnings.filterwarnings('ignore')
 
 def main():
     start_time = time.time()
@@ -60,22 +68,49 @@ def main():
     X_train = train_df['crimeaditionalinfo'].fillna('')
     X_test = test_df['crimeaditionalinfo'].fillna('')
 
+    # Data Augmentation: Upsample rare classes
+    print("Performing data augmentation to balance classes...")
+    ros_category = RandomOverSampler(random_state=42)
+    X_train_ros_cat, y_train_category_ros = ros_category.fit_resample(X_train.to_frame(), y_train_category)
+
+    ros_sub_category = RandomOverSampler(random_state=42)
+    X_train_ros_subcat, y_train_sub_category_ros = ros_sub_category.fit_resample(X_train.to_frame(), y_train_sub_category)
+
     # Transform the data
     print("Transforming the data...")
     transformer = CombinedTransformer()
-    X_train_transformed = transformer.fit_transform(X_train)
+    X_train_transformed_cat = transformer.fit_transform(X_train_ros_cat['crimeaditionalinfo'])
+    X_train_transformed_subcat = transformer.transform(X_train_ros_subcat['crimeaditionalinfo'])
     X_test_transformed = transformer.transform(X_test)
 
-    # Initialize models
+    # Compute class weights
+    print("Computing class weights...")
+    class_weights_category = compute_class_weight(
+        class_weight='balanced',
+        classes=np.unique(y_train_category_ros),
+        y=y_train_category_ros
+    )
+    class_weights_sub_category = compute_class_weight(
+        class_weight='balanced',
+        classes=np.unique(y_train_sub_category_ros),
+        y=y_train_sub_category_ros
+    )
+
+    class_weights_category_dict = dict(enumerate(class_weights_category))
+    class_weights_sub_category_dict = dict(enumerate(class_weights_sub_category))
+
+    # Initialize models with class weights
     category_model = LGBMClassifier(
         n_estimators=200,
-        learning_rate=0.1,
-        n_jobs=-1
+        learning_rate=0.05,
+        n_jobs=-1,
+        class_weight=class_weights_category_dict
     )
     sub_category_model = LGBMClassifier(
         n_estimators=200,
-        learning_rate=0.1,
-        n_jobs=-1
+        learning_rate=0.05,
+        n_jobs=-1,
+        class_weight=class_weights_sub_category_dict
     )
 
     # Training progress bars
@@ -85,28 +120,32 @@ def main():
 
     # Custom callback to update progress bar
     def category_callback(env):
-        category_pbar.update(1)
+        if env.iteration % 1 == 0:
+            category_pbar.update(1)
 
     def sub_category_callback(env):
-        sub_category_pbar.update(1)
+        if env.iteration % 1 == 0:
+            sub_category_pbar.update(1)
 
     # Train category model with progress bar
     category_model.fit(
-        X_train_transformed,
-        y_train_category,
+        X_train_transformed_cat,
+        y_train_category_ros,
         eval_set=[(X_test_transformed, y_test_category)],
         eval_metric='multi_logloss',
-        callbacks=[category_callback]
+        callbacks=[category_callback],
+
     )
     category_pbar.close()
 
     # Train sub-category model with progress bar
     sub_category_model.fit(
-        X_train_transformed,
-        y_train_sub_category,
+        X_train_transformed_subcat,
+        y_train_sub_category_ros,
         eval_set=[(X_test_transformed, y_test_sub_category)],
         eval_metric='multi_logloss',
-        callbacks=[sub_category_callback]
+        callbacks=[sub_category_callback],
+
     )
     sub_category_pbar.close()
 

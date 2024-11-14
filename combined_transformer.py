@@ -1,5 +1,4 @@
 # combined_transformer.py
-
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -100,5 +99,3 @@ class CombinedTransformer(BaseEstimator, TransformerMixin):
             cleaned_texts.tolist(), batch_size=64, show_progress_bar=False
         )
         return embeddings
-
-

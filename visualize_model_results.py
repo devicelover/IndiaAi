@@ -1,5 +1,3 @@
-# visualize_model_results.py
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -26,7 +24,10 @@ def main():
     print("Loading encoders and model...")
     category_encoder = joblib.load('models/category_encoder.joblib')
     sub_category_encoder = joblib.load('models/sub_category_encoder.joblib')
-    pipeline = joblib.load('models/crime_classification_model.joblib')
+    models = joblib.load('models/crime_classification_model.joblib')
+    transformer = models['transformer']
+    category_model = models['category_model']
+    sub_category_model = models['sub_category_model']
 
     # Handle unseen labels in test data
     print("Handling unseen labels in test data...")
@@ -45,34 +46,40 @@ def main():
 
     # Encode labels
     print("Encoding labels...")
-    y_test = pd.DataFrame({
-        'category': category_encoder.transform(test_df['category']),
-        'sub_category': sub_category_encoder.transform(test_df['sub_category'])
-    })
+    y_test_category = category_encoder.transform(test_df['category'])
+    y_test_sub_category = sub_category_encoder.transform(test_df['sub_category'])
 
     X_test = test_df['crimeaditionalinfo'].fillna('')
 
-    # Predict using the loaded model
+    # Transform the test data
+    print("Transforming test data...")
+    X_test_transformed = transformer.transform(X_test)
+
+    # Predict using the loaded models
     print("Predicting on test data...")
-    y_pred = pipeline.predict(X_test)
+    y_pred_category = category_model.predict(X_test_transformed)
+    y_pred_sub_category = sub_category_model.predict(X_test_transformed)
 
     # Convert predictions to DataFrame
-    y_pred_df = pd.DataFrame(y_pred, columns=['category', 'sub_category'])
+    y_pred_df = pd.DataFrame({
+        'category': y_pred_category,
+        'sub_category': y_pred_sub_category
+    })
 
     # Decode labels
     print("Decoding labels...")
-    y_test_decoded = y_test.copy()
-    y_pred_decoded = y_pred_df.copy()
-
-    y_test_decoded['category'] = category_encoder.inverse_transform(y_test['category'])
-    y_pred_decoded['category'] = category_encoder.inverse_transform(y_pred_df['category'])
-
-    y_test_decoded['sub_category'] = sub_category_encoder.inverse_transform(y_test['sub_category'])
-    y_pred_decoded['sub_category'] = sub_category_encoder.inverse_transform(y_pred_df['sub_category'])
+    y_test_decoded = pd.DataFrame({
+        'category': category_encoder.inverse_transform(y_test_category),
+        'sub_category': sub_category_encoder.inverse_transform(y_test_sub_category)
+    })
+    y_pred_decoded = pd.DataFrame({
+        'category': category_encoder.inverse_transform(y_pred_category),
+        'sub_category': sub_category_encoder.inverse_transform(y_pred_sub_category)
+    })
 
     # Generate visualizations
     print("Generating visualizations...")
-    output_dir = 'visualizations'
+    output_dir = 'visualizations_latest_tune'
     os.makedirs(output_dir, exist_ok=True)
 
     # 1. Class Distribution Plots
@@ -94,7 +101,7 @@ def main():
     plot_top_n_confusion_matrix(y_test_decoded['sub_category'], y_pred_decoded['sub_category'],
                                 top_n, 'Sub-categories', output_dir)
 
-    print("Visualizations saved in the 'visualizations' directory.")
+    print("Visualizations saved in the 'visualizations_latest' directory.")
 
 def plot_class_distribution(data, column, title, output_dir):
     counts = data[column].value_counts()

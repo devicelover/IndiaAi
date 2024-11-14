@@ -19,9 +19,12 @@ app.config['PROCESSED_FOLDER'] = PROCESSED_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(PROCESSED_FOLDER, exist_ok=True)
 
-# Load the model and encoders
+# Load the models and encoders
 print("Loading model and encoders...")
-model = joblib.load('models/crime_classification_model.joblib')
+models = joblib.load('models/crime_classification_model.joblib')
+transformer = models['transformer']
+category_model = models['category_model']
+sub_category_model = models['sub_category_model']
 category_encoder = joblib.load('models/category_encoder.joblib')
 sub_category_encoder = joblib.load('models/sub_category_encoder.joblib')
 
@@ -49,11 +52,9 @@ def index():
                 return redirect(url_for('index'))
             else:
                 # Process the input and get prediction
-                prediction = model.predict([description])
-
-                # Access the predicted indices
-                predicted_category_index = prediction[0][0]
-                predicted_sub_category_index = prediction[0][1]
+                X_transformed = transformer.transform([description])
+                predicted_category_index = category_model.predict(X_transformed)[0]
+                predicted_sub_category_index = sub_category_model.predict(X_transformed)[0]
 
                 # Perform inverse transformation
                 try:
@@ -98,11 +99,9 @@ def process_file(filepath):
         return redirect(url_for('index'))
 
     # Predict using the model pipeline
-    predictions = model.predict(df['crimeaditionalinfo'].fillna(''))
-
-    # Extract predicted indices
-    predicted_category_indices = predictions[:, 0]
-    predicted_sub_category_indices = predictions[:, 1]
+    X_transformed = transformer.transform(df['crimeaditionalinfo'].fillna(''))
+    predicted_category_indices = category_model.predict(X_transformed)
+    predicted_sub_category_indices = sub_category_model.predict(X_transformed)
 
     # Decode predictions
     categories = category_encoder.inverse_transform(predicted_category_indices)
