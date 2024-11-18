@@ -1,6 +1,4 @@
 // Custom JavaScript
-
-// Show a loading message when the form is submitted
 document.addEventListener('DOMContentLoaded', function() {
     var fileForm = document.getElementById('file-form');
     if (fileForm) {
