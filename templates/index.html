@@ -1,38 +1,132 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="container-fluid">
-    <h2 class="font-weight-bold">Crime Classification</h2>
-    <p>Select an option below to get started:</p>
+<div class="row">
+        <!-- Main Content -->
+        <div class="col-md-8">
+            <h2 class="font-weight-bold">CRIME AI</h2>
+            <p>Select an option below to get started:</p>
 
-    <ul class="nav nav-tabs d-flex flex-wrap justify-content-center" id="myTab" role="tablist">
-        <li class="nav-item">
-            <a class="nav-link active font-weight-bold text-center" id="text-tab" data-toggle="tab" href="#text" role="tab">Text Input</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link font-weight-bold text-center" id="file-tab" data-toggle="tab" href="#file" role="tab">Upload CSV</a>
-        </li>
-    </ul>
+            <ul class="nav nav-tabs d-flex flex-wrap justify-content-center" id="myTab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active font-weight-bold text-center" id="text-tab" data-toggle="tab" href="#text" role="tab">Text Input</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold text-center" id="file-tab" data-toggle="tab" href="#file" role="tab">Upload CSV</a>
+                </li>
+            </ul>
 
-    <div class="tab-content" id="myTabContent">
-        <!-- Text Input Tab -->
-        <div class="tab-pane fade show active" id="text" role="tabpanel">
-            <form method="POST" action="{{ url_for('index') }}" class="mt-3">
-                <div class="form-group">
-                    <label for="description" class="font-weight-bold">Enter Crime Description:</label>
-                    <textarea class="form-control" id="description" name="description" rows="5" placeholder="Enter the crime description here..."></textarea>
+            <div class="tab-content" id="myTabContent">
+                <!-- Text Input Tab -->
+                <div class="tab-pane fade show active" id="text" role="tabpanel">
+                    <form method="POST" action="{{ url_for('index') }}" class="mt-3">
+                        <div class="form-group">
+                            <label for="description" class="font-weight-bold">Enter Crime Description:</label>
+                            <textarea class="form-control" id="description" name="description" rows="5" placeholder="Enter the crime description here..."></textarea>
+                        </div>
+                        <button type="submit" name="text_input" class="btn btn-primary font-weight-bold btn-block">Classify</button>
+                    </form>
                 </div>
-                <button type="submit" name="text_input" class="btn btn-primary font-weight-bold btn-block">Classify</button>
-            </form>
+                <!-- File Upload Tab -->
+                <div class="tab-pane fade" id="file" role="tabpanel">
+                    <form method="POST" action="{{ url_for('index') }}" enctype="multipart/form-data" class="mt-3" id="file-form">
+                        <div class="form-group">
+                            <label for="file" class="font-weight-bold">Upload CSV File:</label>
+                            <input type="file" class="form-control-file" id="file" name="file" accept=".csv">
+                        </div>
+                        <button type="submit" name="file_input" class="btn btn-primary font-weight-bold btn-block" id="file-submit-button">Process File</button>
+                    </form>
+                </div>
+            </div>
         </div>
-        <!-- File Upload Tab -->
-        <div class="tab-pane fade" id="file" role="tabpanel">
-            <form method="POST" action="{{ url_for('index') }}" enctype="multipart/form-data" class="mt-3" id="file-form">
-                <div class="form-group">
-                    <label for="file" class="font-weight-bold">Upload CSV File:</label>
-                    <input type="file" class="form-control-file" id="file" name="file" accept=".csv">
+
+        <!-- Marquee Section -->
+        <div class="col-md-4">
+          <div class="instructions-section">
+            <h4 class="instructions-heading">Instructions</h4>
+            <div class="scroll-container">
+                <div class="scroll-content">
+                    <!-- Do's and Don'ts in Hinglish -->
+                    <div class="instruction-item">
+                        <p><strong>❌ Don't Be Vague / साफ नहीं लिखें:</strong></p>
+                        <p>❌ "Mujhe dikkat hui."</p>
+                        <p>✔️ "WhatsApp par phishing link aaya, ₹1,000 ka fraud ho gaya."</p>
+                    </div>
+                    <div class="instruction-item">
+                        <p><strong>❌ Don't Forget Details / Jaankari na chhodein:</strong></p>
+                        <p>❌ "Paise cut gaye."</p>
+                        <p>✔️ "₹2,000 unauthorized withdrawal 10 Nov ko Paytm account se hua."</p>
+                    </div>
+                    <div class="instruction-item">
+                        <p><strong>❌ Don't Skip Platforms / Platform ka mention karein:</strong></p>
+                        <p>❌ "Mujhse fraud hua."</p>
+                        <p>✔️ "Fake cashback link mujhe SMS ke through mila aur ₹1,500 ka loss hua."</p>
+                    </div>
+                    <div class="instruction-item">
+                        <p><strong>❌ Don't Miss Keywords / कीवर्ड न छोड़ें:</strong></p>
+                        <p>❌ "My account was hacked."</p>
+                        <p>✔️ "My Instagram account was hacked, and unauthorized posts were made."</p>
+                    </div>
+                    <div class="instruction-item">
+                        <p><strong>❌ Don't Forget Details / विवरण न छोड़ें:</strong></p>
+                        <p>❌ "Money was deducted."</p> 
+                        <p>✔️ "Rs. 5,000 unauthorized withdrawal occurred on 10th Nov."</p>
+                    </div>
+                    <div class="instruction-item">
+                        <p><strong>❌ Don't Add Emotions / भावनाओं को न जोड़ें:</strong></p>
+                        <p>❌ "I am very upset."</p> 
+                        <p>✔️ "Fraudulent call misused my OTP for a transaction."</p>
+                    </div>
+                    <div class="instruction-item">
+                        <p><strong>❌ Don't Generalize the Incident / घटना को सामान्य न बनाएं:</strong></p>
+                        <p>❌ "Scam occurred."</p>
+                        <p>✔️ "I received a fake cashback offer via SMS; ₹1,000 was debited."</p>
+                    </div>
                 </div>
-                <button type="submit" name="file_input" class="btn btn-primary font-weight-bold btn-block" id="file-submit-button">Process File</button>
-            </form>
+                <!-- Duplicate the content for seamless scrolling -->
+                <div class="scroll-content">
+                    <!-- Do's and Don'ts duplicated -->
+                    <div class="instruction-item">
+                        <p><strong>❌ Don't Be Vague / साफ नहीं लिखें:</strong></p>
+                        <p>❌ "Mujhe dikkat hui."</p>
+                        <p>✔️ "WhatsApp par phishing link aaya, ₹1,000 ka fraud ho gaya."</p>
+                    </div>
+                    <div class="instruction-item">
+                        <p><strong>❌ Don't Forget Details / Jaankari na chhodein:</strong></p>
+                        <p>❌ "Paise cut gaye."</p>
+                        <p>✔️ "₹2,000 unauthorized withdrawal 10 Nov ko Paytm account se hua."</p>
+                    </div>
+                    <div class="instruction-item">
+                        <p><strong>❌ Don't Skip Platforms / Platform ka mention karein:</strong></p>
+                        <p>❌ "Mujhse fraud hua."</p>
+                        <p>✔️ "Fake cashback link mujhe SMS ke through mila aur ₹1,500 ka loss hua."</p>
+                    </div>
+                    <div class="instruction-item">
+                        <p><strong>❌ Don't Miss Keywords / कीवर्ड न छोड़ें:</strong></p>
+                        <p>❌ "My account was hacked."</p>
+                        <p>✔️ "My Instagram account was hacked, and unauthorized posts were made."</p>
+                    </div>
+                    <div class="instruction-item">
+                        <p><strong>❌ Don't Forget Details / विवरण न छोड़ें:</strong></p>
+                        <p>❌ "Money was deducted."</p> 
+                        <p>✔️ "Rs. 5,000 unauthorized withdrawal occurred on 10th Nov."</p>
+                    </div>
+                    <div class="instruction-item">
+                        <p><strong>❌ Don't Add Emotions / भावनाओं को न जोड़ें:</strong></p>
+                        <p>❌ "I am very upset."</p> 
+                        <p>✔️ "Fraudulent call misused my OTP for a transaction."</p>
+                    </div>
+                    <div class="instruction-item">
+                        <p><strong>❌ Don't Generalize the Incident / घटना को सामान्य न बनाएं:</strong></p>
+                        <p>❌ "Scam occurred."</p>
+                        <p>✔️ "I received a fake cashback offer via SMS; ₹1,000 was debited."</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+          
+          
+        
+        
         </div>
     </div>
 </div>

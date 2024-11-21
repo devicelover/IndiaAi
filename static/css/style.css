@@ -156,3 +156,81 @@ textarea:focus, input[type="file"]:focus {
         margin-bottom: 10px;
     }
 }
+
+/* Increase the size of all containers */
+.container-fluid {
+    max-width: 90%; /* Expand width to 90% of the viewport */
+    margin: 0 auto; /* Center the container */
+    padding: 20px; /* Add spacing inside the container */
+}
+
+.row {
+    margin-bottom: 20px; /* Add spacing between rows */
+}
+
+.col-md-8, .col-md-4 {
+    padding: 20px; /* Add internal padding for better spacing */
+}
+
+/* Adjust marquee container */
+.marquee-container {
+    height: auto; /* Let the height adjust dynamically */
+    padding: 20px; /* Add more padding for better spacing */
+    font-size: 1.1rem; /* Slightly increase font size for better readability */
+}
+
+/* Optional: Adjust card styling if present */
+.card {
+    padding: 20px; /* Increase spacing inside cards */
+    font-size: 1.2rem; /* Increase font size for card text */
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4); /* Enhance shadow for better visual effect */
+}
+
+    /* Keyframe animation for scrolling */
+    /* Keyframe animation for seamless scrolling */
+    @keyframes scrollUp {
+        0% {
+            transform: translateY(0%);
+        }
+        100% {
+            transform: translateY(-100%);
+        }
+    }
+
+    /* Instructions Section Styling */
+    .instructions-section {
+        background-color: #2a2a3b; /* Matches other container colors */
+        border: 1px solid #ced4da;
+        border-radius: 10px;
+        padding: 10px;
+        position: relative;
+        height: 400px;
+        overflow: hidden;
+    }
+
+    /* Heading Styling */
+    .instructions-heading {
+        font-weight: bold;
+        color: #007bff;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+
+    /* Scrolling Container */
+    .scroll-container {
+        height: 100%;
+        overflow: hidden;
+        position: relative;
+    }
+
+    /* Scrolling Content */
+    .scroll-content {
+        display: flex;
+        flex-direction: column;
+        animation: scrollUp 15s linear infinite;
+    }
+
+    /* Individual Instruction Items */
+    .instruction-item {
+        margin-bottom: 20px;
+    }

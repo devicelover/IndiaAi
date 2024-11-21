@@ -1,5 +1,3 @@
-# app.py
-
 from flask import Flask, render_template, request, send_file, redirect, url_for, flash
 import pandas as pd
 import joblib
@@ -32,8 +30,7 @@ sub_category_encoder = joblib.load('models/sub_category_encoder.joblib')
 ALLOWED_EXTENSIONS = {'csv'}
 
 def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.context_processor
 def inject_current_year():
@@ -69,7 +66,9 @@ def index():
                     print("Error:", e)
                     sub_category_pred = "Unknown Sub-category"
 
+                # Render the result page with predictions
                 return render_template('result.html', description=description, category=category_pred, sub_category=sub_category_pred)
+
         elif 'file_input' in request.form:
             # File upload form submitted
             file = request.files.get('file')
@@ -121,6 +120,11 @@ def process_file(filepath):
 @app.route('/download/<filename>')
 def download_file(filename):
     return send_file(os.path.join(app.config['PROCESSED_FOLDER'], filename), as_attachment=True)
+
+# Test route to confirm Flask is running
+@app.route('/test')
+def test():
+    return "Flask is running and responding!"
 
 if __name__ == '__main__':
     app.run(debug=True)
