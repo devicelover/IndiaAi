@@ -6,7 +6,7 @@
             <h2 class="font-weight-bold">CRIME AI</h2>
             <p>Select an option below to get started:</p>
 
-            <ul class="nav nav-tabs d-flex flex-wrap justify-content-center" id="myTab" role="tablist">
+            <ul class="nav nav-tabs d-flex flex-wrap justify-content-start" id="myTab" role="tablist">
                 <li class="nav-item">
                     <a class="nav-link active font-weight-bold text-center" id="text-tab" data-toggle="tab" href="#text" role="tab">Text Input</a>
                 </li>
@@ -18,12 +18,16 @@
             <div class="tab-content" id="myTabContent">
                 <!-- Text Input Tab -->
                 <div class="tab-pane fade show active" id="text" role="tabpanel">
-                    <form method="POST" action="{{ url_for('index') }}" class="mt-3">
+                    <form id="description-form" method="POST" action="{{ url_for('index') }}" class="mt-3">
                         <div class="form-group">
                             <label for="description" class="font-weight-bold">Enter Crime Description:</label>
                             <textarea class="form-control" id="description" name="description" rows="5" placeholder="Enter the crime description here..."></textarea>
+                            <small class="text-muted">
+                                * Description must be at least 5 words and clearly describe the issue as per the instructions. <br>
+                                * विवरण कम से कम 5 शब्दों का होना चाहिए और समस्या को स्पष्ट रूप से वर्णित करना चाहिए।
+                            </small>
                         </div>
-                        <button type="submit" name="text_input" class="btn btn-primary font-weight-bold btn-block">Classify</button>
+                        <button type="submit" name="text_input" class="btn btn-primary font-weight-bold btn-block">Submit</button>
                     </form>
                 </div>
                 <!-- File Upload Tab -->
@@ -68,12 +72,12 @@
                     </div>
                     <div class="instruction-item">
                         <p><strong>❌ Don't Forget Details / विवरण न छोड़ें:</strong></p>
-                        <p>❌ "Money was deducted."</p> 
+                        <p>❌ "Money was deducted."</p>
                         <p>✔️ "Rs. 5,000 unauthorized withdrawal occurred on 10th Nov."</p>
                     </div>
                     <div class="instruction-item">
                         <p><strong>❌ Don't Add Emotions / भावनाओं को न जोड़ें:</strong></p>
-                        <p>❌ "I am very upset."</p> 
+                        <p>❌ "I am very upset."</p>
                         <p>✔️ "Fraudulent call misused my OTP for a transaction."</p>
                     </div>
                     <div class="instruction-item">
@@ -107,12 +111,12 @@
                     </div>
                     <div class="instruction-item">
                         <p><strong>❌ Don't Forget Details / विवरण न छोड़ें:</strong></p>
-                        <p>❌ "Money was deducted."</p> 
+                        <p>❌ "Money was deducted."</p>
                         <p>✔️ "Rs. 5,000 unauthorized withdrawal occurred on 10th Nov."</p>
                     </div>
                     <div class="instruction-item">
                         <p><strong>❌ Don't Add Emotions / भावनाओं को न जोड़ें:</strong></p>
-                        <p>❌ "I am very upset."</p> 
+                        <p>❌ "I am very upset."</p>
                         <p>✔️ "Fraudulent call misused my OTP for a transaction."</p>
                     </div>
                     <div class="instruction-item">
@@ -123,10 +127,10 @@
                 </div>
             </div>
         </div>
-          
-          
-        
-        
+
+
+
+
         </div>
     </div>
 </div>
