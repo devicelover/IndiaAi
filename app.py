@@ -3,15 +3,22 @@ import pandas as pd
 import joblib
 import os
 from werkzeug.utils import secure_filename
+from transformers import BertTokenizerFast
 
 app = Flask(__name__)
-app.secret_key = 'your_secure_secret_key'  # Replace with your actual secret key
+app.secret_key = 'your_secure_secret_key'  # Replace with your actual secure key
 
 UPLOAD_FOLDER = 'uploads'
 PROCESSED_FOLDER = 'processed'
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['PROCESSED_FOLDER'] = PROCESSED_FOLDER
+
+# Initialize the tokenizer and force the pad token
+tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
+if tokenizer.pad_token is None:
+    # Directly assign the pad token if it is not already set
+    tokenizer.pad_token = "[PAD]"
 
 # Create directories if they don't exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -67,7 +74,8 @@ def index():
                     sub_category_pred = "Unknown Sub-category"
 
                 # Render the result page with predictions
-                return render_template('result.html', description=description, category=category_pred, sub_category=sub_category_pred)
+                return render_template('result.html', description=description,
+                                       category=category_pred, sub_category=sub_category_pred)
 
         elif 'file_input' in request.form:
             # File upload form submitted
